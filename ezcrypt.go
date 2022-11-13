@@ -1,7 +1,6 @@
 package ezcrypt
 
 import (
-	"fmt"
 	"io"
 	"math/bits"
 	"os"
@@ -11,6 +10,18 @@ const BUFFERSIZE = 1024
 
 type cryptFunc func([]byte, int) []byte
 
+// Encrypt read file, then write encrypted to target
+func Encrypt(file, target *os.File) error {
+	return readBytesThen(file, target, encryptBytes)
+}
+
+// Decrypt read file, then write decrypted to target
+func Decrypt(file, target *os.File) error {
+	return readBytesThen(file, target, decryptBytes)
+}
+
+// readBytesThen read each bytes on file, then apply fn function on the bytes
+// then write the resulting bytes to target file
 func readBytesThen(file, target *os.File, fn cryptFunc) (err error) {
 	file.Seek(0, io.SeekStart)
 	n := io.SeekStart
@@ -18,23 +29,20 @@ func readBytesThen(file, target *os.File, fn cryptFunc) (err error) {
 		buf := make([]byte, BUFFERSIZE)
 		n, err = file.Read(buf)
 		if err != nil && err != io.EOF {
-			fmt.Printf("end of file. %v\n", err)
+			// end of file
 			return
 		}
 		if n == 0 {
+			// no bytes left to read
 			break
 		}
 		newbuf := fn(buf, n)
-		target.Write(newbuf[:n])
+		_, err = target.Write(newbuf[:n])
+		if err != nil {
+			return
+		}
 	}
 	return
-}
-
-func Decrypt(file, target *os.File) {
-	readBytesThen(file, target, decryptBytes)
-}
-func Encrypt(file, target *os.File) {
-	readBytesThen(file, target, encryptBytes)
 }
 
 // encryptButes read each byte then inverse each bits, then add two
