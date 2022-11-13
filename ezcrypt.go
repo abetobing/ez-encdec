@@ -24,6 +24,20 @@ func Decrypt(file, target *os.File) error {
 // then write the resulting bytes to target file
 func readBytesThen(file, target *os.File, fn cryptFunc) (err error) {
 	file.Seek(0, io.SeekStart)
+	target.Seek(0, io.SeekStart)
+
+	defer func(file, target *os.File) {
+		// reset the file cursor to start
+		_, err := file.Seek(0, io.SeekStart)
+		if err != nil {
+			panic(err)
+		}
+		_, err = target.Seek(0, io.SeekStart)
+		if err != nil {
+			panic(err)
+		}
+	}(file, target)
+
 	n := io.SeekStart
 	for {
 		buf := make([]byte, BUFFERSIZE)
